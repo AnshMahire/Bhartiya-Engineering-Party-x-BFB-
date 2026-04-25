@@ -100,6 +100,12 @@ function createEmergency(req, res) {
         lat: assignment.hospital.lat,
         lng: assignment.hospital.lng
       }
+    },
+    routes: {
+      shortestRoute: assignment.routes?.shortestRoute || null,
+      fastestRoute: assignment.routes?.fastestRoute || null,
+      recommendedRoute: assignment.routes?.recommendedRoute || null,
+      estimatedTimeSavedMinutes: assignment.routes?.estimatedTimeSavedMinutes || 0
     }
   };
 

@@ -3,6 +3,7 @@ import { MapContainer as LeafletMapContainer, Marker, Polyline, Popup, TileLayer
 import "leaflet/dist/leaflet.css";
 import MapContainer from "./MapContainer";
 import { ambulanceIcon, hospitalIcon, patientIcon } from "./mapIcons";
+import RouteInsightsCard from "./RouteInsightsCard";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -42,6 +43,11 @@ function MapSection({ emergency }) {
     emergency.phase === "to_hospital"
       ? [ambulance, hospital]
       : [ambulance, patient];
+  const shortestRouteCoords =
+    emergency?.routes?.shortestRoute?.coordinates?.map((point) => [point.lat, point.lng]) || [];
+  const recommendedRouteCoords =
+    emergency?.routes?.recommendedRoute?.coordinates?.map((point) => [point.lat, point.lng]) || [];
+  const showAiRoutes = emergency.phase !== "to_hospital" && shortestRouteCoords.length > 1 && recommendedRouteCoords.length > 1;
 
   return (
     <MapContainer
@@ -55,7 +61,14 @@ function MapSection({ emergency }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <Polyline positions={routePoints} pathOptions={{ color: "#dc2626", weight: 5 }} />
+        {showAiRoutes ? (
+          <>
+            <Polyline positions={shortestRouteCoords} pathOptions={{ color: "#ef4444", weight: 5 }} />
+            <Polyline positions={recommendedRouteCoords} pathOptions={{ color: "#22c55e", weight: 5 }} />
+          </>
+        ) : (
+          <Polyline positions={routePoints} pathOptions={{ color: "#dc2626", weight: 5 }} />
+        )}
 
         <Marker position={ambulance} icon={ambulanceIcon}>
           <Popup>Ambulance: {emergency.ambulance.id}</Popup>
@@ -73,6 +86,7 @@ function MapSection({ emergency }) {
           </Marker>
         ))}
       </LeafletMapContainer>
+      <RouteInsightsCard routes={emergency?.routes} />
     </MapContainer>
   );
 }

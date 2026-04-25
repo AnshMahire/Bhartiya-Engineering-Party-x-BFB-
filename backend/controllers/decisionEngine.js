@@ -1,5 +1,6 @@
 const { getDistanceInKm } = require("../utils/distanceCalculator");
 const { getEtaMinutes } = require("../utils/etaCalculator");
+const { optimizeRoutes } = require("../utils/routeOptimizer");
 
 function pickNearestAvailableAmbulance(patientLocation, ambulances) {
   const available = ambulances.filter((ambulance) => ambulance.available);
@@ -70,14 +71,22 @@ function assignEmergency({ patientLocation, ambulances, hospitals, trafficZones 
   );
 
   const etaToHospital = getEtaMinutes(patientLocation, hospital, trafficZones);
+  const routes = optimizeRoutes({
+    start: { lat: ambulance.lat, lng: ambulance.lng },
+    end: patientLocation,
+    trafficZones
+  });
+
+  const aiEtaToPatient = routes.recommendedRoute?.totalMinutes || etaToPatient;
 
   return {
     success: true,
     ambulance,
     hospital,
-    etaToPatient,
+    etaToPatient: aiEtaToPatient,
     etaToHospital,
-    totalEta: etaToPatient + etaToHospital
+    totalEta: aiEtaToPatient + etaToHospital,
+    routes
   };
 }
 

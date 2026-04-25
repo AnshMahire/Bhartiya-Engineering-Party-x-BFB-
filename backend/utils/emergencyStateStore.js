@@ -47,6 +47,12 @@ const EMPTY_STATE = {
       lng: null
     }
   },
+  routes: {
+    shortestRoute: null,
+    fastestRoute: null,
+    recommendedRoute: null,
+    estimatedTimeSavedMinutes: 0
+  },
   updatedAt: null
 };
 

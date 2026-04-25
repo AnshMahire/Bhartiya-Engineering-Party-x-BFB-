@@ -1,8 +1,9 @@
 import L from "leaflet";
-import { MapContainer as LeafletMapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer as LeafletMapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import MapContainer from "./MapContainer";
 import { ambulanceIcon, hospitalIcon, patientIcon } from "./mapIcons";
+import RouteInsightsCard from "./RouteInsightsCard";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -25,6 +26,15 @@ function MapView({ emergency }) {
   const patientPosition = [emergency.patient.lat, emergency.patient.lng];
   const ambulancePosition = [emergency.ambulance.lat, emergency.ambulance.lng];
   const hospitalPosition = [emergency.hospital.lat, emergency.hospital.lng];
+  const shortestRouteCoords =
+    emergency?.routes?.shortestRoute?.coordinates?.map((point) => [point.lat, point.lng]) || [];
+  const recommendedRouteCoords =
+    emergency?.routes?.recommendedRoute?.coordinates?.map((point) => [point.lat, point.lng]) || [];
+  const showAiRoutes = emergency.phase !== "to_hospital" && shortestRouteCoords.length > 1 && recommendedRouteCoords.length > 1;
+  const fallbackRoute =
+    emergency.phase === "to_hospital"
+      ? [ambulancePosition, hospitalPosition]
+      : [ambulancePosition, patientPosition];
 
   return (
     <MapContainer
@@ -38,6 +48,15 @@ function MapView({ emergency }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {showAiRoutes ? (
+          <>
+            <Polyline positions={shortestRouteCoords} pathOptions={{ color: "#ef4444", weight: 5 }} />
+            <Polyline positions={recommendedRouteCoords} pathOptions={{ color: "#22c55e", weight: 5 }} />
+          </>
+        ) : (
+          <Polyline positions={fallbackRoute} pathOptions={{ color: "#dc2626", weight: 5 }} />
+        )}
+
         <Marker position={patientPosition} icon={patientIcon}>
           <Popup>Patient</Popup>
         </Marker>
@@ -50,6 +69,7 @@ function MapView({ emergency }) {
           <Popup>Hospital: {emergency.hospital.name}</Popup>
         </Marker>
       </LeafletMapContainer>
+      <RouteInsightsCard routes={emergency?.routes} />
     </MapContainer>
   );
 }

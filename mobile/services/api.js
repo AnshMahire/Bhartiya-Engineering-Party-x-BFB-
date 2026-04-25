@@ -8,11 +8,17 @@ function getMetroHost() {
 }
 
 const metroHost = getMetroHost();
-const LAN_BACKEND_HOST = "10.38.13.181";
-const defaultBaseUrl =
-  Platform.OS === "android"
-    ? `http://${LAN_BACKEND_HOST || metroHost || "10.0.2.2"}:4000`
-    : `http://${LAN_BACKEND_HOST || metroHost || "localhost"}:4000`;
+const defaultBaseUrl = (() => {
+  if (metroHost) {
+    return `http://${metroHost}:4000`;
+  }
+
+  if (Platform.OS === "android") {
+    return "http://10.0.2.2:4000";
+  }
+
+  return "http://localhost:4000";
+})();
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || defaultBaseUrl;
 
