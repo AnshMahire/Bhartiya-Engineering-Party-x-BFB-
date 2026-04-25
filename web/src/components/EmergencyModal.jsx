@@ -13,8 +13,8 @@ function EmergencyModal({ open, emergency, distance, onAccept, onIgnore, busy })
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4">
+      <div className="relative z-[2001] w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xl font-bold text-red-700">Urgent Request</h2>
           <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
