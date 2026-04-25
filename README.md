@@ -1,85 +1,107 @@
-# RESQ - Emergency Response System 🚑
-
-RESQ is a premium, high-performance emergency response platform designed to bridge the gap between citizens and emergency services. Built with a focus on speed, reliability, and human-centric design, RESQ ensures that help is just a single tap (or shake) away.
+**RESQ** is a high-performance, multi-modal emergency dispatch platform designed to minimize response times during critical incidents. By integrating **AI Voice Recognition**, **Shake-to-Trigger** mechanics, and a **Live-Tracking Simulation**, RESQ provides a robust safety net for users in high-stress situations.
 
 ---
 
-## ✨ Features
+## ⚡ Core Pillars
 
-### 1. Rapid Activation
-*   **SOS Pulse**: A high-visibility, animated SOS button designed for high-stress situations.
-*   **Shake-to-Trigger**: Integrated accelerometer support allows users to trigger an emergency by simply shaking their device.
+### 1. Multi-Modal Emergency Triggers
+*   **The Pulse SOS**: A high-fidelity, animated central button for immediate manual activation.
+*   **Shake-to-Trigger**: Background accelerometer monitoring that detects high-G shaking events to launch an emergency request without looking at the screen.
+*   **AI Voice Assistant**: integrated `@react-native-voice/voice` processing that listens for keywords like *"Help"*, *"SOS"*, or *"Emergency"*.
 
-### 2. Intelligent Lifecycle Management
-*   **Phase 1: Deep Search**: Advanced radar-style animation while the system identifies the nearest available ambulance and responder.
-*   **Phase 2: Live Tracking**: Real-time map integration showing the responder's location, unit ID, and a live ETA (Estimated Time of Arrival).
-*   **Phase 3: Safety Compliance**: Detailed arrival summary including hospital destination, trip duration, and case ID for record-keeping.
+### 2. The Safety Shield (Slide-to-Cancel)
+To prevent false alarms from automated triggers (Voice/Shake), RESQ introduces the **Safety Shield Overlay**.
+*   **5-Second Intelligent Countdown**: High-contrast visual and audio feedback via `expo-speech`.
+*   **Gesture-Based Cancellation**: A physical "Slide to Cancel" interaction that requires intentional movement, ensuring the system only proceeds with legitimate emergencies.
 
-### 3. Premium UI/UX
-*   **Glassmorphism & Micro-animations**: A modern, sleek aesthetic with smooth transitions and interactive feedback.
-*   **High-Contrast Controls**: Bold, accessible action buttons for calling dispatchers or responders directly.
-*   **Dual-Theme Logic**: Intelligent switching between Light and Dark modes based on the current phase of the emergency.
+### 3. Dynamic Life-Cycle Tracking
+*   **Searching**: Radar-style simulation to locate the nearest responder.
+*   **Live Tracking**: A map-centric dashboard showing responder unit ID, driver rating (John Doe, Unit 402), and real-time ETA updates.
+*   **Safety Compliance**: Post-arrival summary including Hospital Destination (City General Hospital) and unique Case IDs for record-keeping.
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ Technical Architecture
 
-### Mobile (Frontend)
-*   **Framework**: React Native with Expo SDK 49
-*   **Navigation**: State-driven modular architecture
-*   **Icons**: FontAwesome5, MaterialIcons, Ionicons (Vector Icons)
-*   **Styling**: Premium Vanilla CSS-in-JS
+### Frontend (Mobile)
+- **Framework**: Expo (React Native) SDK 49
+- **Animations**: Reanimated & Native Animated API for pulsing effects and high-performance overlays.
+- **Sensors**: `expo-sensors` (Accelerometer) for shake detection.
+- **Speech**: `expo-speech` (TTS) for accessibility and emergency status vocalization.
+- **State Management**: React Hooks with a custom `useVoiceSOS` dispatcher.
 
 ### Backend (Server)
-*   **Environment**: Node.js & Express
-*   **State Management**: Real-time decision engine for ambulance assignment
-*   **API**: RESTful endpoints for emergency lifecycle management
+- **Stack**: Node.js & Express
+- **Engine**: Smart Assignment Engine for connecting patients to optimal Hospital/Ambulance pairs.
+- **Real-Time**: Polling-based state synchronization for live-updates on mobile.
 
 ---
 
 ## 📂 Project Structure
 
 ```text
-├── mobile/                 # React Native / Expo Application
-│   ├── assets/             # Branding and mock assets
-│   ├── components/         # Reusable UI components (SOSButton, ShakeDetector)
-│   ├── screens/            # Modular screens (Searching, Tracking, Safety)
-│   ├── services/           # API integration and services
-│   └── App.js              # Central dispatcher and state manager
+├── mobile/                      # React Native (Expo) Patient App
+│   ├── components/              # Reusable UI Components
+│   │   ├── CancelSlider.js      # Slide-to-Cancel gesture logic
+│   │   ├── SOSButton.js         # Central Pulse SOS button
+│   │   ├── SOSCountdownOverlay.js # Full-screen safety timer
+│   │   ├── ShakeDetector.js     # Accelerometer monitoring
+│   │   └── VoiceSOSButton.js    # AI Voice Assistant mic UI
+│   ├── hooks/                   # Custom React Hooks
+│   │   └── useVoiceSOS.js       # Voice recognition & keywords logic
+│   ├── screens/                 # Application Screens
+│   │   ├── OnboardingScreen.js  # Splash & Permissions
+│   │   ├── HomeScreen.js        # Main SOS Dashboard
+│   │   ├── SearchingScreen.js   # Radar search animation
+│   │   ├── TrackingScreen.js    # Live map & driver tracking
+│   │   └── SafetyComplianceScreen.js # Arrival & summary screen
+│   ├── services/                # API Helpers
+│   │   └── api.js               # Axios instance & endpoints
+│   ├── App.js                   # Application Entry & State Manager
+│   └── .env                     # Environment variables (Backend IP)
 │
-└── backend/                # Node.js Express Server
-    ├── controllers/        # Logical controllers (Emergency, Decision Engine)
-    ├── data/               # Mock datasets (Ambulances, Hospitals)
-    └── routes/             # API route definitions
+├── backend/                     # Node.js Express Server
+│   ├── controllers/             # Business Logic & Decision Engine
+│   ├── data/                    # Mock JSON sets (Ambulances, Hospitals)
+│   ├── routes/                  # Express Router definitions
+│   ├── utils/                   # Shared utility functions
+│   └── server.js                # Server entry point
+│
+└── web/                         # Admin Dashboard (Optional/Future)
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Deployment & Installation
 
-### 1. Setup Backend
+### Prerequisite: Configuration
+1. Obtain your local machine IP address (`ipconfig` or `ifconfig`).
+2. Update `mobile/.env`:
+   ```env
+   EXPO_PUBLIC_API_URL=http://<YOUR_IP>:4000
+   ```
+
+### 1. Start Service Layer
 ```bash
 cd backend
 npm install
 npm run dev
 ```
 
-### 2. Setup Mobile
+### 2. Launch Patient App
 ```bash
 cd mobile
 npm install
-# Update .env with your local Machine IP
-# EXPO_PUBLIC_API_URL=http://<YOUR_IP>:4000
 npx expo start
 ```
 
 ---
 
-## 🛡️ Safety & Security
-*   **Encrypted Signaling**: All emergency triggers are sent via end-to-end encrypted signals.
-*   **Accidental Trigger Protection**: A 30-second cancellation window with clear warning prompts to prevent false alarms.
+## 📝 Demo Stability Note (Hackathon Ready)
+The app includes a **`DEMO_MODE`** flag in `useVoiceSOS.js`. This is enabled by default to ensure stable presentations. If enabled, the voice assistant will simulate detection 4 seconds after activation, allowing you to showcase the **Safety Shield** and **Slide-to-Cancel** features reliably without dependency on microphone environmental noise.
 
 ---
 
-## 👨‍💻 Development Team
-Designed and developed with ❤️ for the **Bhartiya Engineering Party x BFB** Hackathon.
+## ✨ Developed For
+**Bhartiya Engineering Party x BFB Hackathon**  
+*Designing technology that saves lives.*
