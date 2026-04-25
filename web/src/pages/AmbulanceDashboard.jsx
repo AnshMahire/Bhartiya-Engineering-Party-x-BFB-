@@ -1,21 +1,74 @@
-import { useEffect, useState } from "react";
-import LiveTracking from "./LiveTracking";
-import { acceptAmbulance, getAmbulanceRequest, pickupPatient } from "../services/api";
+import { useEffect, useMemo, useState } from "react";
+import {
+  acceptAmbulance,
+  getTracking,
+  pickupPatient
+} from "../services/api";
+import EmergencyModal from "../components/EmergencyModal";
+import MapSection from "../components/MapSection";
+import BottomActionPanel from "../components/BottomActionPanel";
+import NavigationView from "./NavigationView";
+import NotificationBanner from "../components/NotificationBanner";
+import StatusCard from "../components/StatusCard";
+import LoadingAnimation from "../components/LoadingAnimation";
+
+function toRad(value) {
+  return (value * Math.PI) / 180;
+}
+
+function getDistanceKm(a, b) {
+  const radius = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const latA = toRad(a.lat);
+  const latB = toRad(b.lat);
+
+  const h =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(latA) * Math.cos(latB) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  return radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
 
 function AmbulanceDashboard() {
   const [emergency, setEmergency] = useState(null);
-  const [message, setMessage] = useState("Waiting for request");
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("System online. Waiting for dispatch.");
+  const [modalDismissed, setModalDismissed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tone, setTone] = useState("info");
 
   useEffect(() => {
-    const load = async () => {
-      const data = await getAmbulanceRequest();
-      setEmergency(data);
+    let mounted = true;
+
+    const pollEmergency = async () => {
+      try {
+        const data = await getTracking();
+
+        if (!mounted) {
+          return;
+        }
+
+        setEmergency(data);
+        setLoading(false);
+        if (!data?.requestId) {
+          setModalDismissed(false);
+        }
+      } catch {
+        if (mounted) {
+          setMessage("Unable to fetch latest tracking data.");
+          setTone("danger");
+        }
+      }
     };
 
-    load();
-    const timer = setInterval(load, 2000);
-    return () => clearInterval(timer);
+    pollEmergency();
+    const timer = setInterval(pollEmergency, 2000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
   }, []);
 
   const onAccept = async () => {
@@ -23,9 +76,12 @@ function AmbulanceDashboard() {
     try {
       const next = await acceptAmbulance();
       setEmergency(next);
-      setMessage("Request accepted. Heading to patient.");
-    } catch (_error) {
-      setMessage("Unable to accept request");
+      setMessage("Request accepted. EN ROUTE to patient.");
+      setTone("success");
+      setModalDismissed(true);
+    } catch {
+      setMessage("Unable to accept emergency request.");
+      setTone("danger");
     } finally {
       setBusy(false);
     }
@@ -36,48 +92,95 @@ function AmbulanceDashboard() {
     try {
       const next = await pickupPatient();
       setEmergency(next);
-      setMessage("Patient picked. Heading to hospital.");
-    } catch (_error) {
-      setMessage("Unable to mark pickup");
+      setMessage("Patient picked. Navigation switched to hospital route.");
+      setTone("warning");
+    } catch {
+      setMessage("Unable to mark patient pickup.");
+      setTone("danger");
     } finally {
       setBusy(false);
     }
   };
 
+  const distanceToPatient = useMemo(() => {
+    if (!emergency?.requestId) {
+      return "-";
+    }
+
+    const km = getDistanceKm(
+      { lat: emergency.ambulance.lat, lng: emergency.ambulance.lng },
+      { lat: emergency.patient.lat, lng: emergency.patient.lng }
+    );
+
+    return `${km.toFixed(1)} km`;
+  }, [emergency]);
+
+  const showIncomingModal =
+    Boolean(emergency?.requestId) &&
+    emergency?.ambulance?.status === "assigned" &&
+    !modalDismissed;
+
+  const pendingAlerts =
+    emergency?.requestId && emergency?.ambulance?.status === "assigned" ? 1 : 0;
+
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="text-2xl font-bold">Ambulance Dashboard</h1>
+    <main className="min-h-screen bg-[#f4f4f5] text-slate-900">
+      <section className="mx-auto w-full max-w-7xl px-4 pt-4">
+        {loading ? <LoadingAnimation label="Loading ambulance dispatch feed..." /> : null}
+        <div className="mt-3">
+          <NotificationBanner message={message} tone={tone} />
+        </div>
+      </section>
 
-      <div className="mt-4 rounded border bg-white p-4 text-sm">
-        <p><span className="font-semibold">Patient:</span> {emergency?.patient?.name || "-"}</p>
-        <p><span className="font-semibold">Patient Location:</span> {emergency?.patient?.lat}, {emergency?.patient?.lng}</p>
-        <p><span className="font-semibold">Ambulance Status:</span> {emergency?.ambulance?.status || "idle"}</p>
-        <p><span className="font-semibold">Emergency Status:</span> {emergency?.emergencyStatus || "idle"}</p>
-        <p><span className="font-semibold">Message:</span> {message}</p>
-      </div>
+      <section className="mx-auto mt-4 grid w-full max-w-7xl grid-cols-1 gap-4 px-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <StatusCard
+              title="Driver"
+              value={emergency?.ambulance?.driverName || "Driver"}
+              subtitle={emergency?.ambulance?.id || "No ambulance"}
+            />
+            <StatusCard
+              title="Emergency Status"
+              value={emergency?.emergencyStatus || "idle"}
+              subtitle={emergency?.phase || "waiting"}
+              tone="warning"
+            />
+            <StatusCard
+              title="ETA"
+              value={`${emergency?.eta ?? 0} mins`}
+              subtitle={emergency?.requestId || "No request"}
+              tone="info"
+            />
+          </div>
+          <MapSection emergency={emergency} />
+        </div>
 
-      <div className="mt-4 flex gap-3">
-        <button
-          type="button"
-          onClick={onAccept}
-          disabled={busy || !emergency?.requestId}
-          className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-        >
-          Accept Request
-        </button>
-        <button
-          type="button"
-          onClick={onPickup}
-          disabled={busy || emergency?.phase !== "to_patient"}
-          className="rounded bg-orange-600 px-4 py-2 text-white disabled:opacity-50"
-        >
-          Pickup Patient
-        </button>
-      </div>
+        <div className="space-y-4">
+          <NavigationView
+            emergency={emergency}
+            onPickup={onPickup}
+            busy={busy}
+            message={message}
+          />
+        </div>
+      </section>
 
-      <div className="mt-4">
-        <LiveTracking emergency={emergency} />
-      </div>
+      <BottomActionPanel
+        pendingAlerts={pendingAlerts}
+        emergency={emergency}
+        busy={busy}
+        onDispatch={onAccept}
+      />
+
+      <EmergencyModal
+        open={showIncomingModal}
+        emergency={emergency}
+        distance={distanceToPatient}
+        onAccept={onAccept}
+        onIgnore={() => setModalDismissed(true)}
+        busy={busy}
+      />
     </main>
   );
 }

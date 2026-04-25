@@ -1,9 +1,15 @@
 import MapView from "../components/MapView";
+import StatusCard from "../components/StatusCard";
 
 function LiveTracking({ emergency }) {
   return (
-    <section>
-      <h2 className="mb-2 text-lg font-semibold">Live Tracking</h2>
+    <section className="space-y-3">
+      <StatusCard
+        title="Tracking View"
+        value="Live Positioning"
+        subtitle="Map markers update from backend tracking state"
+        tone="info"
+      />
       <MapView emergency={emergency} />
     </section>
   );
