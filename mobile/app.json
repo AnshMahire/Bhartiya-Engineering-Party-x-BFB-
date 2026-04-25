@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Smart Emergency Mobile",
+    "slug": "smart-emergency-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}

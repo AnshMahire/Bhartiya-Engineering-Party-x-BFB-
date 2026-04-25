@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+coverage/
+.expo/
+web-build/
+
+# Vite / cache
+.vite/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Expo / React Native
+.expo-shared/
+android/
+ios/
+*.jks
+*.keystore
+
+# Runtime / temp
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
