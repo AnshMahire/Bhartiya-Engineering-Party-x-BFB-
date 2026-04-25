@@ -9,32 +9,42 @@ const api = axios.create({
 
 export const createEmergency = async (payload) => {
   const { data } = await api.post("/emergency", payload);
-  return data;
-};
-
-export const getActiveEmergency = async () => {
-  const { data } = await api.get("/emergency/active");
   return data.emergency;
 };
 
-export const acceptEmergency = async (emergencyId) => {
-  const { data } = await api.post(`/emergency/${emergencyId}/accept`);
+export const getTracking = async () => {
+  const { data } = await api.get("/tracking");
+  return data.emergency;
+};
+
+export const getAmbulanceRequest = async () => {
+  const { data } = await api.get("/ambulance-request");
+  return data.emergency;
+};
+
+export const acceptAmbulance = async () => {
+  const { data } = await api.patch("/ambulance/accept");
+  return data.emergency;
+};
+
+export const pickupPatient = async () => {
+  const { data } = await api.patch("/ambulance/pickup");
+  return data.emergency;
+};
+
+export const getHospitalAlert = async () => {
+  const { data } = await api.get("/hospital-alert");
+  return data.emergency;
+};
+
+export const confirmHospital = async () => {
+  const { data } = await api.patch("/hospital/confirm");
   return data.emergency;
 };
 
 export const resetEmergency = async () => {
   const { data } = await api.post("/emergency/reset");
-  return data;
-};
-
-export const getAmbulances = async () => {
-  const { data } = await api.get("/ambulances");
-  return data.ambulances;
-};
-
-export const getHospitals = async () => {
-  const { data } = await api.get("/hospitals");
-  return data.hospitals;
+  return data.emergency;
 };
 
 export default api;

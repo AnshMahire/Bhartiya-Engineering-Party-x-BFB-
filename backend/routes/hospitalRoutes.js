@@ -1,13 +1,9 @@
 const express = require("express");
-const hospitals = require("../data/hospitals");
+const { getHospitalAlert, confirmHospital } = require("../controllers/hospitalController");
 
 const router = express.Router();
 
-router.get("/", (_req, res) => {
-  res.json({
-    status: "ok",
-    hospitals
-  });
-});
+router.get("/hospital-alert", getHospitalAlert);
+router.patch("/hospital/confirm", confirmHospital);
 
 module.exports = router;

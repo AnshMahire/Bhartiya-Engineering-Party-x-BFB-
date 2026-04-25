@@ -43,3 +43,11 @@ ios/
 *.pid.lock
 tmp/
 temp/
+
+# Project runtime state (generated during app execution)
+backend/data/emergencyState.json
+
+# Expo / Metro local files
+mobile/.expo/
+mobile/.expo-shared/
+mobile/.metro-health-check*

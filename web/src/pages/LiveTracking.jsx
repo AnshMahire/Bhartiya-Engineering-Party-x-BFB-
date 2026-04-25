@@ -3,7 +3,7 @@ import MapView from "../components/MapView";
 function LiveTracking({ emergency }) {
   return (
     <section>
-      <h2 className="mb-3 text-xl font-semibold text-slate-900">Live Tracking</h2>
+      <h2 className="mb-2 text-lg font-semibold">Live Tracking</h2>
       <MapView emergency={emergency} />
     </section>
   );

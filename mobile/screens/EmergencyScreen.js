@@ -2,34 +2,43 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const STATUS_COPY = {
   ambulance_assigned: "Ambulance assigned",
+  driver_enroute: "Driver accepted and is on the way",
   driver_arriving: "Driver arriving",
-  patient_picked: "Patient picked up",
-  to_hospital: "On the way to hospital",
-  reached_hospital: "Reached hospital"
+  awaiting_pickup: "Ambulance reached patient location",
+  enroute_hospital: "On the way to hospital",
+  completed: "Reached hospital"
 };
 
 function EmergencyScreen({ emergency, onBack }) {
-  const statusText = emergency ? STATUS_COPY[emergency.status] || emergency.statusMessage : "Searching ambulance...";
+  const statusText = emergency
+    ? STATUS_COPY[emergency.emergencyStatus] || emergency.emergencyStatus
+    : "Searching ambulance...";
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Emergency Live Status</Text>
       <Text style={styles.status}>{statusText}</Text>
 
-      {emergency && (
+      {emergency?.requestId && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Ambulance</Text>
           <Text style={styles.text}>ID: {emergency.ambulance.id}</Text>
           <Text style={styles.text}>Driver: {emergency.ambulance.driverName}</Text>
           <Text style={styles.text}>ETA: {emergency.eta === 0 ? "Arrived" : `${emergency.eta} mins`}</Text>
+          <Text style={styles.text}>Status: {emergency.ambulance.status}</Text>
 
           <Text style={[styles.cardTitle, { marginTop: 14 }]}>Hospital</Text>
           <Text style={styles.text}>{emergency.hospital.name}</Text>
           <Text style={styles.text}>Beds: {emergency.hospital.beds} | ICU: {emergency.hospital.icu}</Text>
+          <Text style={styles.text}>Bed Confirmed: {emergency.hospital.confirmed ? "Yes" : "Pending"}</Text>
+
+          <Text style={[styles.cardTitle, { marginTop: 14 }]}>Patient</Text>
+          <Text style={styles.text}>Name: {emergency.patient.name}</Text>
+          <Text style={styles.text}>Status: {emergency.patient.status}</Text>
         </View>
       )}
 
-      {emergency?.status === "reached_hospital" && (
+      {emergency?.emergencyStatus === "completed" && (
         <Text style={styles.success}>Patient reached hospital successfully</Text>
       )}
 

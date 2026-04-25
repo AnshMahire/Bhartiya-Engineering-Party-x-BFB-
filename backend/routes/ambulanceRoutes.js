@@ -1,13 +1,14 @@
 const express = require("express");
-const ambulances = require("../data/ambulances");
+const {
+  getAmbulanceRequest,
+  acceptAmbulanceRequest,
+  pickupPatient
+} = require("../controllers/ambulanceController");
 
 const router = express.Router();
 
-router.get("/", (_req, res) => {
-  res.json({
-    status: "ok",
-    ambulances
-  });
-});
+router.get("/ambulance-request", getAmbulanceRequest);
+router.patch("/ambulance/accept", acceptAmbulanceRequest);
+router.patch("/ambulance/pickup", pickupPatient);
 
 module.exports = router;

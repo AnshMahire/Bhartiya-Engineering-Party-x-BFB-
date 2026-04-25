@@ -10,10 +10,10 @@ L.Icon.Default.mergeOptions({
 });
 
 function MapView({ emergency }) {
-  if (!emergency) {
+  if (!emergency?.requestId) {
     return (
-      <div className="flex h-[420px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-slate-500">
-        Trigger an emergency to start live map tracking.
+      <div className="flex h-[360px] items-center justify-center rounded border border-dashed bg-white text-sm text-slate-500">
+        No active emergency to track
       </div>
     );
   }
@@ -23,18 +23,21 @@ function MapView({ emergency }) {
   const hospitalPosition = [emergency.hospital.lat, emergency.hospital.lng];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200">
-      <MapContainer center={patientPosition} zoom={13} className="h-[420px] w-full">
+    <div className="overflow-hidden rounded border bg-white">
+      <MapContainer center={patientPosition} zoom={13} className="h-[360px] w-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
         <Marker position={patientPosition}>
-          <Popup>Patient Location</Popup>
+          <Popup>Patient</Popup>
         </Marker>
+
         <Marker position={ambulancePosition}>
           <Popup>Ambulance: {emergency.ambulance.id}</Popup>
         </Marker>
+
         <Marker position={hospitalPosition}>
           <Popup>Hospital: {emergency.hospital.name}</Popup>
         </Marker>

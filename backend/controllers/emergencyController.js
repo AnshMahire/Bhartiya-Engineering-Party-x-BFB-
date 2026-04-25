@@ -2,253 +2,137 @@ const ambulances = require("../data/ambulances");
 const hospitals = require("../data/hospitals");
 const traffic = require("../data/traffic");
 const { assignEmergency } = require("./decisionEngine");
+const {
+  getNextRequestId,
+  readEmergencyState,
+  writeEmergencyState,
+  resetEmergencyState
+} = require("../utils/emergencyStateStore");
 
-let activeEmergency = null;
-let emergencyCount = 1;
-
-function toFixedLocation(lat, lng) {
-  return {
-    lat: Number(Number(lat).toFixed(6)),
-    lng: Number(Number(lng).toFixed(6))
-  };
+function toNumber(value) {
+  return Number(Number(value).toFixed(6));
 }
 
-function lerp(start, end, ratio) {
-  return start + (end - start) * ratio;
-}
-
-function interpolatePoint(start, end, ratio) {
-  return toFixedLocation(lerp(start.lat, end.lat, ratio), lerp(start.lng, end.lng, ratio));
-}
-
-function buildResponse(emergency) {
-  if (!emergency) {
-    return null;
-  }
-
-  return {
-    emergencyId: emergency.id,
-    status: emergency.status,
-    statusMessage: emergency.statusMessage,
-    patient: emergency.patient,
-    ambulance: {
-      id: emergency.ambulance.id,
-      driverName: emergency.ambulance.driverName,
-      lat: emergency.ambulance.lat,
-      lng: emergency.ambulance.lng
-    },
-    hospital: emergency.hospital,
-    eta: emergency.eta,
-    etaBreakdown: emergency.etaBreakdown,
-    timestamps: {
-      createdAt: emergency.createdAt,
-      acceptedAt: emergency.acceptedAt,
-      pickedAt: emergency.pickedAt,
-      completedAt: emergency.completedAt
-    }
-  };
-}
-
-function updateEmergencyState() {
-  if (!activeEmergency || activeEmergency.status === "reached_hospital") {
-    return;
-  }
-
-  if (!activeEmergency.acceptedAt) {
-    activeEmergency.status = "ambulance_assigned";
-    activeEmergency.statusMessage = "Ambulance assigned";
-    return;
-  }
-
-  const now = Date.now();
-  const toPatientSeconds = Math.max(30, activeEmergency.etaBreakdown.toPatient * 8);
-  const toHospitalSeconds = Math.max(40, activeEmergency.etaBreakdown.toHospital * 8);
-
-  if (!activeEmergency.pickedAt) {
-    const elapsedToPatient = (now - activeEmergency.acceptedAt) / 1000;
-    const ratio = Math.min(1, elapsedToPatient / toPatientSeconds);
-
-    const updatedPosition = interpolatePoint(
-      activeEmergency.route.ambulanceStart,
-      activeEmergency.patient,
-      ratio
-    );
-
-    activeEmergency.ambulance.lat = updatedPosition.lat;
-    activeEmergency.ambulance.lng = updatedPosition.lng;
-
-    if (ratio < 1) {
-      activeEmergency.status = "driver_arriving";
-      activeEmergency.statusMessage = "Driver arriving";
-      activeEmergency.eta = Math.max(1, Math.round((toPatientSeconds - elapsedToPatient) / 8));
-      return;
-    }
-
-    activeEmergency.pickedAt = now;
-    activeEmergency.status = "patient_picked";
-    activeEmergency.statusMessage = "Patient picked up";
-  }
-
-  const elapsedToHospital = (now - activeEmergency.pickedAt) / 1000;
-  const ratioToHospital = Math.min(1, elapsedToHospital / toHospitalSeconds);
-
-  const hospitalPosition = interpolatePoint(
-    activeEmergency.patient,
-    activeEmergency.hospital,
-    ratioToHospital
-  );
-
-  activeEmergency.ambulance.lat = hospitalPosition.lat;
-  activeEmergency.ambulance.lng = hospitalPosition.lng;
-
-  if (ratioToHospital < 1) {
-    activeEmergency.status = "to_hospital";
-    activeEmergency.statusMessage = "Patient en route to hospital";
-    activeEmergency.eta = Math.max(1, Math.round((toHospitalSeconds - elapsedToHospital) / 8));
-    return;
-  }
-
-  activeEmergency.status = "reached_hospital";
-  activeEmergency.statusMessage = "Patient reached hospital successfully";
-  activeEmergency.completedAt = now;
-  activeEmergency.eta = 0;
-
-  const sourceAmbulance = ambulances.find((item) => item.id === activeEmergency.ambulance.id);
-  if (sourceAmbulance) {
-    sourceAmbulance.available = true;
-    sourceAmbulance.lat = activeEmergency.hospital.lat;
-    sourceAmbulance.lng = activeEmergency.hospital.lng;
-  }
+function findAmbulanceById(id) {
+  return ambulances.find((item) => item.id === id);
 }
 
 function createEmergency(req, res) {
-  const { lat, lng, patientName } = req.body || {};
+  const { patientName, lat, lng } = req.body || {};
 
   if (typeof lat !== "number" || typeof lng !== "number") {
     return res.status(400).json({
       status: "error",
-      message: "lat and lng are required as numbers."
+      message: "lat and lng are required numbers"
     });
   }
 
-  if (activeEmergency && activeEmergency.status !== "reached_hospital") {
+  const existing = readEmergencyState();
+  if (existing.requestId && existing.emergencyStatus !== "completed" && existing.emergencyStatus !== "idle") {
     return res.status(409).json({
       status: "error",
-      message: "An active emergency is already in progress.",
-      activeEmergency: buildResponse(activeEmergency)
+      message: "An emergency is already active",
+      emergency: existing
     });
   }
 
-  const patientLocation = toFixedLocation(lat, lng);
-  const result = assignEmergency({
+  const patientLocation = { lat: toNumber(lat), lng: toNumber(lng) };
+
+  const assignment = assignEmergency({
     patientLocation,
     ambulances,
     hospitals,
     trafficZones: traffic
   });
 
-  if (!result.success) {
+  if (!assignment.success) {
     return res.status(503).json({
       status: "error",
-      message: result.reason
+      message: assignment.reason
     });
   }
 
-  const sourceAmbulance = ambulances.find((item) => item.id === result.ambulance.id);
-  sourceAmbulance.available = false;
+  const selectedAmbulance = findAmbulanceById(assignment.ambulance.id);
+  selectedAmbulance.available = false;
 
-  activeEmergency = {
-    id: `EMG-${String(emergencyCount).padStart(3, "0")}`,
-    status: "ambulance_assigned",
-    statusMessage: "Ambulance assigned",
-    createdAt: Date.now(),
-    acceptedAt: null,
-    pickedAt: null,
-    completedAt: null,
+  const requestId = getNextRequestId();
+
+  const nextState = {
+    requestId,
+    emergencyStatus: "ambulance_assigned",
+    phase: "to_patient",
     patient: {
-      patientName: patientName || "Anonymous Patient",
-      ...patientLocation
+      name: patientName || "Unknown Patient",
+      lat: patientLocation.lat,
+      lng: patientLocation.lng,
+      status: "waiting"
     },
     ambulance: {
-      id: result.ambulance.id,
-      driverName: result.ambulance.driverName,
-      lat: result.ambulance.lat,
-      lng: result.ambulance.lng
-    },
-    route: {
-      ambulanceStart: {
-        lat: result.ambulance.lat,
-        lng: result.ambulance.lng
-      }
+      id: assignment.ambulance.id,
+      driverName: assignment.ambulance.driverName,
+      lat: assignment.ambulance.lat,
+      lng: assignment.ambulance.lng,
+      status: "assigned",
+      acceptedAt: null,
+      pickedUpAt: null
     },
     hospital: {
-      id: result.hospital.id,
-      name: result.hospital.name,
-      beds: result.hospital.beds,
-      icu: result.hospital.icu,
-      lat: result.hospital.lat,
-      lng: result.hospital.lng
+      id: assignment.hospital.id,
+      name: assignment.hospital.name,
+      lat: assignment.hospital.lat,
+      lng: assignment.hospital.lng,
+      beds: assignment.hospital.beds,
+      icu: assignment.hospital.icu,
+      status: "alerted",
+      confirmed: false
     },
-    eta: result.totalEta,
-    etaBreakdown: {
-      toPatient: result.etaToPatient,
-      toHospital: result.etaToHospital
+    eta: assignment.totalEta,
+    route: {
+      ambulanceStart: {
+        lat: assignment.ambulance.lat,
+        lng: assignment.ambulance.lng
+      },
+      patient: {
+        lat: patientLocation.lat,
+        lng: patientLocation.lng
+      },
+      hospital: {
+        lat: assignment.hospital.lat,
+        lng: assignment.hospital.lng
+      }
     }
   };
 
-  emergencyCount += 1;
-  return res.status(201).json(buildResponse(activeEmergency));
-}
+  const written = writeEmergencyState(nextState);
 
-function getActiveEmergency(_req, res) {
-  updateEmergencyState();
-  return res.json({
-    status: "ok",
-    emergency: buildResponse(activeEmergency)
+  return res.status(201).json({
+    status: "assigned",
+    emergency: written
   });
 }
 
-function acceptEmergency(req, res) {
-  const { id } = req.params;
+function resetEmergency(req, res) {
+  const current = readEmergencyState();
 
-  if (!activeEmergency || activeEmergency.id !== id) {
-    return res.status(404).json({
-      status: "error",
-      message: "Emergency not found."
-    });
-  }
-
-  if (!activeEmergency.acceptedAt) {
-    activeEmergency.acceptedAt = Date.now();
-  }
-
-  updateEmergencyState();
-  return res.json({
-    status: "ok",
-    emergency: buildResponse(activeEmergency)
-  });
-}
-
-function resetEmergency(_req, res) {
-  if (activeEmergency) {
-    const sourceAmbulance = ambulances.find((item) => item.id === activeEmergency.ambulance.id);
-    if (sourceAmbulance) {
-      sourceAmbulance.available = true;
-      sourceAmbulance.lat = activeEmergency.route.ambulanceStart.lat;
-      sourceAmbulance.lng = activeEmergency.route.ambulanceStart.lng;
+  if (current.ambulance?.id) {
+    const selectedAmbulance = findAmbulanceById(current.ambulance.id);
+    if (selectedAmbulance) {
+      selectedAmbulance.available = true;
+      if (current.route?.ambulanceStart?.lat !== null && current.route?.ambulanceStart?.lng !== null) {
+        selectedAmbulance.lat = current.route.ambulanceStart.lat;
+        selectedAmbulance.lng = current.route.ambulanceStart.lng;
+      }
     }
   }
 
-  activeEmergency = null;
+  const reset = resetEmergencyState();
   return res.json({
     status: "ok",
-    message: "Emergency state reset."
+    emergency: reset
   });
 }
 
 module.exports = {
   createEmergency,
-  getActiveEmergency,
-  acceptEmergency,
   resetEmergency
 };

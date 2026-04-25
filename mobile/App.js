@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { SafeAreaView, StatusBar } from "react-native";
 import HomeScreen from "./screens/HomeScreen";
 import EmergencyScreen from "./screens/EmergencyScreen";
-import { acceptEmergency, createEmergency, getActiveEmergency } from "./services/api";
+import { createEmergency, getTracking } from "./services/api";
 
 const DEFAULT_PATIENT = {
   patientName: "Mobile Patient",
@@ -15,7 +15,6 @@ export default function App() {
   const [emergency, setEmergency] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const autoAcceptTriggered = useRef(false);
 
   const triggerEmergency = async (source) => {
     setLoading(true);
@@ -29,7 +28,6 @@ export default function App() {
 
       setEmergency(data);
       setScreen("emergency");
-      autoAcceptTriggered.current = false;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to trigger emergency.");
     } finally {
@@ -40,37 +38,22 @@ export default function App() {
   useEffect(() => {
     const timer = setInterval(async () => {
       try {
-        const active = await getActiveEmergency();
-        if (active) {
-          setEmergency(active);
+        const current = await getTracking();
+
+        if (current?.requestId) {
+          setEmergency(current);
           setScreen("emergency");
+        } else if (screen === "emergency") {
+          setEmergency(null);
+          setScreen("home");
         }
       } catch (_err) {
-        // Keep UI simple during network glitches.
+        // Keep current UI state during network glitches.
       }
     }, 2000);
 
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!emergency || emergency.status !== "ambulance_assigned" || autoAcceptTriggered.current) {
-      return;
-    }
-
-    autoAcceptTriggered.current = true;
-
-    const timeout = setTimeout(async () => {
-      try {
-        const accepted = await acceptEmergency(emergency.emergencyId);
-        setEmergency(accepted);
-      } catch (_err) {
-        // Driver accept can still be done from dashboard.
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [emergency]);
+  }, [screen]);
 
   const goHome = () => {
     setScreen("home");
