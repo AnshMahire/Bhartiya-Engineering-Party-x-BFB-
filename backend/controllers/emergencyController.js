@@ -2,6 +2,7 @@ const ambulances = require("../data/ambulances");
 const hospitals = require("../data/hospitals");
 const traffic = require("../data/traffic");
 const { assignEmergency } = require("./decisionEngine");
+const { restoreAmbulanceFleet } = require("../utils/ambulanceFleetStore");
 const {
   getNextRequestId,
   readEmergencyState,
@@ -38,12 +39,22 @@ function createEmergency(req, res) {
 
   const patientLocation = { lat: toNumber(lat), lng: toNumber(lng) };
 
-  const assignment = assignEmergency({
+  let assignment = assignEmergency({
     patientLocation,
     ambulances,
     hospitals,
     trafficZones: traffic
   });
+
+  if (!assignment.success && assignment.reason === "No available ambulance found at this moment.") {
+    restoreAmbulanceFleet();
+    assignment = assignEmergency({
+      patientLocation,
+      ambulances,
+      hospitals,
+      trafficZones: traffic
+    });
+  }
 
   if (!assignment.success) {
     return res.status(503).json({
@@ -132,6 +143,10 @@ function resetEmergency(req, res) {
   }
 
   const reset = resetEmergencyState();
+  if (!current.ambulance?.id) {
+    restoreAmbulanceFleet();
+  }
+
   return res.json({
     status: "ok",
     emergency: reset

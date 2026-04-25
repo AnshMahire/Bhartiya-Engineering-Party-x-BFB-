@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   SafeAreaView,
@@ -8,13 +8,97 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import * as Speech from "expo-speech";
 import { Entypo, FontAwesome5, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import SOSButton from "../components/SOSButton";
 import ShakeDetector from "../components/ShakeDetector";
+import useVoiceSOS from "../src/hooks/useVoiceSOS";
+import VoiceSOSButton from "../src/components/VoiceSOSButton";
+import CancelSlider from "../src/components/CancelSlider";
 
 const { width } = Dimensions.get("window");
 
 function HomeScreen({ onSOS, onShake, loading, error }) {
+  const [showCancelOverlay, setShowCancelOverlay] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const [pendingTrigger, setPendingTrigger] = useState(null);
+  const countdownTimerRef = useRef(null);
+
+  const clearCountdown = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+  }, []);
+
+  const finalizeSOS = useCallback(() => {
+    clearCountdown();
+    setShowCancelOverlay(false);
+
+    if (pendingTrigger === "shake") {
+      onShake();
+    } else {
+      onSOS();
+    }
+
+    setPendingTrigger(null);
+    setCountdown(5);
+  }, [clearCountdown, onSOS, onShake, pendingTrigger]);
+
+  const armCancelableSOS = useCallback((source) => {
+    setPendingTrigger(source);
+    setCountdown(5);
+    setShowCancelOverlay(true);
+  }, []);
+
+  const cancelPendingSOS = useCallback(() => {
+    clearCountdown();
+    setShowCancelOverlay(false);
+    setPendingTrigger(null);
+    setCountdown(5);
+    Speech.stop();
+    Speech.speak("SOS Cancelled", { language: "en" });
+  }, [clearCountdown]);
+
+  const { isListening, startListening, stopListening } = useVoiceSOS({
+    onVoiceDetected: () => armCancelableSOS("voice")
+  });
+
+  useEffect(() => {
+    if (!showCancelOverlay) {
+      return undefined;
+    }
+
+    clearCountdown();
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown((previous) => Math.max(previous - 1, 0));
+    }, 1000);
+
+    return clearCountdown;
+  }, [clearCountdown, showCancelOverlay]);
+
+  useEffect(() => {
+    if (!showCancelOverlay) {
+      return;
+    }
+
+    if (countdown === 0) {
+      finalizeSOS();
+    }
+  }, [countdown, finalizeSOS, showCancelOverlay]);
+
+  useEffect(() => {
+    if (showCancelOverlay && isListening) {
+      stopListening();
+    }
+  }, [isListening, showCancelOverlay, stopListening]);
+
+  useEffect(() => {
+    return () => {
+      clearCountdown();
+    };
+  }, [clearCountdown]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -50,7 +134,14 @@ function HomeScreen({ onSOS, onShake, loading, error }) {
             <Text style={styles.shakeText}>Or Shake Your Phone to Trigger</Text>
           </View>
           <View style={styles.shakeDetectorWrap}>
-            <ShakeDetector onShake={onShake} disabled={loading} />
+            <ShakeDetector onShake={() => armCancelableSOS("shake")} disabled={loading || showCancelOverlay} />
+          </View>
+          <View style={styles.voiceButtonWrap}>
+            <VoiceSOSButton
+              isListening={isListening}
+              onPress={startListening}
+              disabled={loading || showCancelOverlay}
+            />
           </View>
         </View>
 
@@ -84,6 +175,14 @@ function HomeScreen({ onSOS, onShake, loading, error }) {
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {showCancelOverlay ? (
+        <View style={styles.overlay}>
+          <Text style={styles.overlayTitle}>Sending SOS in {countdown}s</Text>
+          <Text style={styles.overlaySubtitle}>Slide below to cancel emergency trigger</Text>
+          <CancelSlider onCancel={cancelPendingSOS} />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -200,6 +299,10 @@ const styles = StyleSheet.create({
   shakeDetectorWrap: {
     marginTop: 6
   },
+  voiceButtonWrap: {
+    marginTop: 14,
+    width: "88%"
+  },
   info: {
     marginTop: 12,
     textAlign: "center",
@@ -286,6 +389,31 @@ const styles = StyleSheet.create({
     fontSize: 16 / 2,
     color: "#c81e1e",
     fontWeight: "700"
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(2, 6, 23, 0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    zIndex: 999
+  },
+  overlayTitle: {
+    color: "#ffffff",
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center"
+  },
+  overlaySubtitle: {
+    color: "#cbd5e1",
+    marginTop: 10,
+    marginBottom: 22,
+    fontSize: 14,
+    textAlign: "center"
   }
 });
 

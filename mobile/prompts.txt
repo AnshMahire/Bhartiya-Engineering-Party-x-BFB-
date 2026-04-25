@@ -1,0 +1,228 @@
+# RESQ – Prompt Engineering & Development Journey
+
+## Project Name
+
+**RESQ – AI Smart Emergency Response & Ambulance Coordination System**
+
+## Purpose of this Document
+
+This document highlights the major prompts we used during development of RESQ.
+
+Instead of randomly generating code, we used structured prompts to build different modules of the project.
+
+This document summarizes only the **10 most important prompts** used in development.
+
+---
+
+# Prompt 1: Project Architecture Design
+
+### Goal
+
+Design complete project architecture.
+
+### What we asked
+
+* Web dashboard
+* Mobile app
+* Backend
+* Emergency workflow
+
+### Result
+
+Created the full project structure and development roadmap.
+
+---
+
+# Prompt 2: Backend Development
+
+### Goal
+
+Build backend system.
+
+### What we asked
+
+* Express server
+* APIs
+* Decision engine
+* Utility functions
+
+### Result
+
+Built backend architecture for emergency coordination.
+
+---
+
+# Prompt 3: Mock Data Setup
+
+### Goal
+
+Create hackathon-friendly datasets.
+
+### What we asked
+
+* Ambulances
+* Hospitals
+* Traffic zones
+* Emergency state
+
+### Result
+
+Enabled realistic simulation without database.
+
+---
+
+# Prompt 4: Web Dashboard Development
+
+### Goal
+
+Build central command dashboard.
+
+### Features
+
+* Emergency trigger
+* ETA
+* Ambulance assignment
+* Hospital assignment
+
+### Result
+
+Created main admin dashboard.
+
+---
+
+# Prompt 5: Patient Mobile App
+
+### Goal
+
+Build emergency app.
+
+### Features
+
+* SOS button
+* Shake detection
+* Live updates
+
+### Result
+
+Created simple patient-side emergency trigger.
+
+---
+
+# Prompt 6: Ambulance Dashboard
+
+### Goal
+
+Build ambulance workflow.
+
+### Features
+
+* Accept request
+* Navigate to patient
+* Navigate to hospital
+
+### Result
+
+Improved ambulance coordination.
+
+---
+
+# Prompt 7: Hospital Dashboard
+
+### Goal
+
+Build hospital coordination page.
+
+### Features
+
+* Incoming patient alerts
+* ETA updates
+* Bed visibility
+
+### Result
+
+Hospitals can prepare before arrival.
+
+---
+
+# Prompt 8: Real-Time Tracking
+
+### Goal
+
+Simulate ambulance movement.
+
+### Features
+
+* Live map tracking
+* Marker updates
+* Route tracking
+
+### Result
+
+Built real-time experience using Leaflet.
+
+---
+
+# Prompt 9: Global UI Enhancement
+
+### Goal
+
+Improve frontend UI.
+
+### Features
+
+* Navbar
+* Footer
+* Responsive layout
+* Better cards
+
+### Result
+
+Created polished user experience.
+
+---
+
+# Prompt 10: AI Traffic Optimization
+
+### Goal
+
+Add AI layer.
+
+### Features
+
+* Traffic prediction
+* Route comparison
+* Fastest route selection
+
+### Result
+
+System now chooses fastest route instead of shortest route.
+
+---
+
+# Final Tech Stack
+
+### Frontend
+
+* React Vite
+* Tailwind CSS
+* React Leaflet
+
+### Mobile
+
+* React Native
+* Expo
+
+### Backend
+
+* Node.js
+* Express
+
+### Data
+
+* JSON mock storage
+
+---
+
+# Final Statement
+
+**RESQ was built using structured prompt engineering to rapidly develop a complete emergency response ecosystem during hackathon constraints.**

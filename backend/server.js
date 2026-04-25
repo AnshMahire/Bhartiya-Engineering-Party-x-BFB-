@@ -7,6 +7,7 @@ const hospitalRoutes = require("./routes/hospitalRoutes");
 const trackingRoutes = require("./routes/trackingRoutes");
 const { startTrackingSimulation } = require("./controllers/trackingController");
 const { resetEmergencyState } = require("./utils/emergencyStateStore");
+const { restoreAmbulanceFleet } = require("./utils/ambulanceFleetStore");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -36,6 +37,7 @@ app.get("/", (_req, res) => {
   });
 });
 
+restoreAmbulanceFleet();
 resetEmergencyState();
 startTrackingSimulation();
 

@@ -1,5 +1,7 @@
+import "react-native-gesture-handler";
 import { useEffect, useState } from "react";
 import { SafeAreaView, StatusBar } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import HomeScreen from "./screens/HomeScreen";
 import EmergencyScreen from "./screens/EmergencyScreen";
 import { createEmergency, getTracking } from "./services/api";
@@ -61,18 +63,20 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }}>
-      <StatusBar barStyle="light-content" />
-      {screen === "home" ? (
-        <HomeScreen
-          onSOS={() => triggerEmergency("SOS")}
-          onShake={() => triggerEmergency("Shake")}
-          loading={loading}
-          error={error}
-        />
-      ) : (
-        <EmergencyScreen emergency={emergency} onBack={goHome} />
-      )}
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }}>
+        <StatusBar barStyle="light-content" />
+        {screen === "home" ? (
+          <HomeScreen
+            onSOS={() => triggerEmergency("SOS")}
+            onShake={() => triggerEmergency("Shake")}
+            loading={loading}
+            error={error}
+          />
+        ) : (
+          <EmergencyScreen emergency={emergency} onBack={goHome} />
+        )}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
