@@ -2,6 +2,7 @@ import L from "leaflet";
 import { MapContainer as LeafletMapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import MapContainer from "./MapContainer";
+import { ambulanceIcon, hospitalIcon, patientIcon } from "./mapIcons";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -37,15 +38,15 @@ function MapView({ emergency }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <Marker position={patientPosition}>
+        <Marker position={patientPosition} icon={patientIcon}>
           <Popup>Patient</Popup>
         </Marker>
 
-        <Marker position={ambulancePosition}>
+        <Marker position={ambulancePosition} icon={ambulanceIcon}>
           <Popup>Ambulance: {emergency.ambulance.id}</Popup>
         </Marker>
 
-        <Marker position={hospitalPosition}>
+        <Marker position={hospitalPosition} icon={hospitalIcon}>
           <Popup>Hospital: {emergency.hospital.name}</Popup>
         </Marker>
       </LeafletMapContainer>

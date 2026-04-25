@@ -2,6 +2,7 @@ import L from "leaflet";
 import { MapContainer as LeafletMapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import MapContainer from "./MapContainer";
+import { ambulanceIcon, hospitalIcon, patientIcon } from "./mapIcons";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -56,13 +57,13 @@ function MapSection({ emergency }) {
 
         <Polyline positions={routePoints} pathOptions={{ color: "#dc2626", weight: 5 }} />
 
-        <Marker position={ambulance}>
+        <Marker position={ambulance} icon={ambulanceIcon}>
           <Popup>Ambulance: {emergency.ambulance.id}</Popup>
         </Marker>
-        <Marker position={patient}>
+        <Marker position={patient} icon={patientIcon}>
           <Popup>Patient: {emergency.patient.name}</Popup>
         </Marker>
-        <Marker position={hospital}>
+        <Marker position={hospital} icon={hospitalIcon}>
           <Popup>Hospital: {emergency.hospital.name}</Popup>
         </Marker>
 
