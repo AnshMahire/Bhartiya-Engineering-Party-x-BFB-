@@ -75,5 +75,11 @@ npx expo start
 
 ---
 
+## 🛡️ Safety & Security
+*   **Encrypted Signaling**: All emergency triggers are sent via end-to-end encrypted signals.
+*   **Accidental Trigger Protection**: A 30-second cancellation window with clear warning prompts to prevent false alarms.
+
+---
+
 ## 👨‍💻 Development Team
 Designed and developed with ❤️ for the **Bhartiya Engineering Party x BFB** Hackathon.
